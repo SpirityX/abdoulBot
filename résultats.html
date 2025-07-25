@@ -1,0 +1,119 @@
+<html lang="en">
+ <head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1" name="viewport"/>
+  <title>
+   Visitor Counter with GMT Time
+  </title>
+  <script src="https://cdn.tailwindcss.com">
+  </script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;display=swap" rel="stylesheet"/>
+  <style>
+   body {
+      font-family: 'Inter', sans-serif;
+    }
+  </style>
+ </head>
+ <body class="bg-gray-50 min-h-screen flex flex-col items-center justify-center p-4">
+  <div class="max-w-md w-full bg-white rounded-xl shadow-lg p-8 flex flex-col items-center space-y-6">
+   <div class="flex items-center space-x-3">
+    <i class="fas fa-users text-blue-600 text-4xl">
+    </i>
+    <h1 class="text-3xl font-bold text-gray-900">
+     Current Visitors
+    </h1>
+   </div>
+   <div aria-atomic="true" aria-live="polite" class="text-6xl font-extrabold text-blue-700" id="visitorCount">
+    0
+   </div>
+   <div class="text-lg text-gray-600 flex items-center space-x-2">
+    <i class="fas fa-clock text-gray-400">
+    </i>
+    <span aria-atomic="true" aria-live="polite" id="gmtTime">
+     --:--:-- GMT
+    </span>
+   </div>
+   <img alt="Illustration showing a group of diverse people visiting a website, with digital and network elements around them" class="w-full rounded-lg object-cover" height="200" loading="lazy" src="https://storage.googleapis.com/a1aa/image/aef27b96-f9fe-41ff-47df-79232cedb691.jpg" width="400"/>
+  </div>
+  <script>
+   const timeRanges = [
+      { start: 0, end: 7, min: 0, max: 50 },
+      { start: 7, end: 12, min: 50, max: 200 },
+      { start: 12, end: 20, min: 200, max: 400 },
+      { start: 20, end: 22, min: 100, max: 150 },
+      { start: 22, end: 24, min: 50, max: 100 }
+    ];
+
+    function getCurrentRange(hour) {
+      for (const range of timeRanges) {
+        if (hour >= range.start && hour < range.end) {
+          return range;
+        }
+      }
+      return timeRanges[0];
+    }
+
+    function getFractionOfRange(now, range) {
+      let hour = now.getUTCHours();
+      let min = now.getUTCMinutes();
+      let sec = now.getUTCSeconds();
+
+      let currentTimeDecimal = hour + min / 60 + sec / 3600;
+
+      let start = range.start;
+      let end = range.end;
+
+      if (end === 24 && currentTimeDecimal < start) {
+        currentTimeDecimal += 24;
+        end = 24 + (end - start);
+      }
+
+      let fraction = (currentTimeDecimal - start) / (end - start);
+      if (fraction < 0) fraction = 0;
+      if (fraction > 1) fraction = 1;
+      return fraction;
+    }
+
+    let previousVisitors = null;
+
+    function getVisitorsInterpolated(range, fraction) {
+      const baseValue = range.min + fraction * (range.max - range.min);
+      const noiseAmplitude = (range.max - range.min) * 0.01;
+      const noise = (Math.random() * 2 - 1) * noiseAmplitude;
+      let rawValue = baseValue + noise;
+      if (rawValue < range.min) rawValue = range.min;
+      if (rawValue > range.max) rawValue = range.max;
+
+      if (previousVisitors === null) {
+        previousVisitors = rawValue;
+      } else {
+        rawValue = previousVisitors * 0.8 + rawValue * 0.2;
+        previousVisitors = rawValue;
+      }
+
+      return Math.round(rawValue);
+    }
+
+    function update() {
+      const now = new Date();
+      const hourGMT = now.getUTCHours();
+
+      const range = getCurrentRange(hourGMT);
+      const fraction = getFractionOfRange(now, range);
+
+      const visitors = getVisitorsInterpolated(range, fraction);
+
+      document.getElementById('visitorCount').textContent = visitors;
+
+      const h = String(now.getUTCHours()).padStart(2, '0');
+      const m = String(now.getUTCMinutes()).padStart(2, '0');
+      const s = String(now.getUTCSeconds()).padStart(2, '0');
+      document.getElementById('gmtTime').textContent = `${h}:${m}:${s} GMT`;
+    }
+
+    update();
+    setInterval(update, 500);
+  </script>
+ </body>
+</html>
